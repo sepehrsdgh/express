@@ -84,8 +84,8 @@ const getAll = (model) => {
       .sort()
       .filed()
       .pagination();
+    // const docs = await query.explain();
     const docs = await query.explain();
-
     res.status(200).json({
       status: 'success',
       results: docs.length,
