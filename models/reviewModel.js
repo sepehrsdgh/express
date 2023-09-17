@@ -1,4 +1,5 @@
 const mongosee = require('mongoose');
+const Tour = require('./tourModel');
 
 const reviewSchema = new mongosee.Schema(
   {
@@ -41,6 +42,34 @@ reviewSchema.pre(/^find/, function (next) {
     path: 'tour',
     select: 'name',
   });
+  next();
+});
+
+reviewSchema.statics.calcAverageRatings = async function (tourId) {
+  const stats = await this.aggregate([
+    {
+      $match: { tour: tourId },
+    },
+    {
+      $group: {
+        _id: '$tour',
+        nRating: {
+          $sum: 1,
+        },
+
+        avgRating: { $avg: `$rating` },
+      },
+    },
+  ]);
+  const { avgRating, nRating } = stats[0];
+  await Tour.findByIdAndUpdate(tourId, {
+    ratingsAverage: avgRating,
+    ratingsQuantity: nRating,
+  });
+};
+
+reviewSchema.pre('save', function (next) {
+  this.constructor.calcAverageRatings(this.tour);
   next();
 });
 
